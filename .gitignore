@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+*.log
+coverage/
+.DS_Store
+Thumbs.db
+.dogfood.toml.backup
+
+dogfood_backup.sql

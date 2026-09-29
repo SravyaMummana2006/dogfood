@@ -1,0 +1,19 @@
+[portal]
+base_url = "http://localhost:3000"
+
+[routes]
+gallery = "/api/public/gallery"
+submit = "/api/public/submit"
+judge_scores = "/api/judging/submissions/37c676c2-52b2-4474-ae90-25039d610169/evaluation"
+peer_scores = "/api/judging/submissions/37c676c2-52b2-4474-ae90-25039d610169/evaluation"
+csv_export = "/api/hackathons/0e86bb0a-b4ae-49c6-845b-83e216c4d334/export.csv"
+
+[auth]
+organizer = "Authorization: Bearer 32b27833a966cd6444bf08bdb6f0320259e0ffd0a4c04e8c4c94ee3c195a6961"
+judge_a = "Authorization: Bearer 4a6b090e5802855d27e4b2140175c0fa1f9d96a7d6b79ffa294e67598cbe54a9"
+judge_b = "Authorization: Bearer 0f44a38f9c1b544503d2d75dafc16a9e1496ccbdc8f08329c8678c9f5e63482a"
+participant = "Authorization: Bearer 458e21e5ba6722f8c579e34af0e81bcb5987e1d485c6b3a1c04bb7ab1d38f37f"
+
+[tiers]
+claimed = ["T1", "T2", "T3", "T4"]
+pitch = "Self-hostable hackathon judging portal with server-side judging integrity, flexible judge assignment, deterministic scoring, auditability, and CSV export."

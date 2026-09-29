@@ -1,0 +1,2180 @@
+openapi: 3.0.3
+info:
+  title: DOGFOOD API
+  version: 0.1.0
+  description: 'Hackathon judging, voting, and management API. Note that admin/service routes typically wrap responses in { data: ... } while some public routes return unwrapped JSON. Error formats also vary between wrapped structured objects and raw string messages.'
+servers:
+  - url: 'http://localhost:3000'
+    description: Local deployment
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ErrorStandard:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+              additionalProperties: true
+    ErrorString:
+      type: object
+      properties:
+        error:
+          type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        display_name:
+          type: string
+        is_admin:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+    Hackathon:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+            - DRAFT
+            - ACTIVE
+            - COMPLETED
+        policy_id:
+          type: string
+          format: uuid
+          nullable: true
+        required_judges:
+          type: integer
+          nullable: true
+        submissions_close:
+          type: string
+          format: date-time
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Team:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        hackathon_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    Submission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        hackathon_id:
+          type: string
+          format: uuid
+        team_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        summary:
+          type: string
+          nullable: true
+        link:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+    GallerySubmission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        team_name:
+          type: string
+    JudgeAssignment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        hackathon_id:
+          type: string
+          format: uuid
+        judge_user_id:
+          type: string
+          format: uuid
+        submission_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+    JudgeInvitation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        hackathon_id:
+          type: string
+          format: uuid
+        submission_id:
+          type: string
+          format: uuid
+        judge_user_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - PENDING
+            - ACCEPTED
+            - DECLINED
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Policy:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum:
+            - DRAFT
+            - PUBLISHED
+        version:
+          type: integer
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Criterion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        policy_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        min_score:
+          type: integer
+        max_score:
+          type: integer
+        weight:
+          type: integer
+        display_order:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PolicyWithCriteria:
+      allOf:
+        - $ref: '#/components/schemas/Policy'
+        - type: object
+          properties:
+            criteria:
+              type: array
+              items:
+                $ref: '#/components/schemas/Criterion'
+    Evaluation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        hackathon_id:
+          type: string
+          format: uuid
+        judge_user_id:
+          type: string
+          format: uuid
+        submission_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - DRAFT
+            - SUBMITTED
+        total_score:
+          type: number
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    EvaluationScore:
+      type: object
+      properties:
+        criterion_id:
+          type: string
+          format: uuid
+        raw_score:
+          type: integer
+    EvaluationDetail:
+      type: object
+      properties:
+        evaluation:
+          $ref: '#/components/schemas/Evaluation'
+        scores:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvaluationScore'
+    Comment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        body:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        author_id:
+          type: string
+          format: uuid
+        author_name:
+          type: string
+    CommunityVote:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        hackathon_id:
+          type: string
+          format: uuid
+        submission_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+    AggregateResult:
+      type: object
+      properties:
+        submission_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        team_id:
+          type: string
+          format: uuid
+        total_assignments:
+          type: integer
+        submitted_evaluations:
+          type: integer
+        missing_evaluations:
+          type: integer
+        aggregate_score:
+          type: number
+          nullable: true
+        status:
+          type: string
+    PublicResult:
+      type: object
+      properties:
+        submission_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        team_name:
+          type: string
+        aggregate_score:
+          type: number
+          nullable: true
+        community_votes:
+          type: integer
+    AuditEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+        target_type:
+          type: string
+        target_id:
+          type: string
+          format: uuid
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      description: Returns system health status.
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+        '503':
+          description: Unhealthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+      security: []
+      operationId: getapihealth
+  /api/auth/register:
+    post:
+      summary: Register user
+      description: Register a new account.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - display_name
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                  maxLength: 128
+                display_name:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+      responses:
+        '201':
+          description: Registered
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+        '409':
+          description: Duplicate email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+      security: []
+      operationId: postapiauthregister
+  /api/auth/login:
+    post:
+      summary: Login user
+      description: Authenticate and return JWT token.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 1
+                  maxLength: 128
+      responses:
+        '200':
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      token:
+                        type: string
+                      expires_at:
+                        type: string
+                        format: date-time
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+      security: []
+      operationId: postapiauthlogin
+  /api/auth/logout:
+    post:
+      summary: Logout user
+      description: Invalidate the current session token.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+      operationId: postapiauthlogout
+  /api/auth/me:
+    get:
+      summary: Get current user
+      description: Fetch the profile of the authenticated user.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+      operationId: getapiauthme
+  /api/hackathons:
+    get:
+      summary: List hackathons
+      description: Get a list of all hackathons. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of hackathons
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Hackathon'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+        '403':
+          description: Forbidden (Organizer required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+      operationId: getapihackathons
+    post:
+      summary: Create hackathon
+      description: Create a new hackathon. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                description:
+                  type: string
+                  maxLength: 10000
+                  default: ''
+      responses:
+        '201':
+          description: Hackathon created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Hackathon'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+        '403':
+          description: Forbidden (Organizer required)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+      operationId: postapihackathons
+  '/api/hackathons/{id}/policy':
+    put:
+      summary: Set hackathon policy
+      description: Link a published judging policy to a hackathon. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - policy_id
+              properties:
+                policy_id:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Policy linked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Hackathon'
+        '400':
+          description: Validation or State Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+      operationId: putapihackathonsidpolicy
+  '/api/hackathons/{id}/status':
+    put:
+      summary: Update hackathon status
+      description: Update the lifecycle status of a hackathon. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - DRAFT
+                    - ACTIVE
+                    - COMPLETED
+      responses:
+        '200':
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Hackathon'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+      operationId: putapihackathonsidstatus
+  '/api/hackathons/{id}/judging-settings':
+    put:
+      summary: Update judging settings
+      description: Update the required judges parameter. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - required_judges
+              properties:
+                required_judges:
+                  type: integer
+                  nullable: true
+                  minimum: 1
+      responses:
+        '200':
+          description: Settings updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Hackathon'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+      operationId: putapihackathonsidjudgingsettings
+  '/api/hackathons/{id}/teams':
+    get:
+      summary: List teams
+      description: Get all teams in a hackathon. Requires Organizer access.
+      operationId: getHackathonTeams
+      tags:
+        - Organizer Teams
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        name:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                        submission_id:
+                          type: string
+                          format: uuid
+                          nullable: true
+                        submission_title:
+                          type: string
+                          nullable: true
+                        members:
+                          type: array
+                          nullable: true
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                                format: uuid
+                              email:
+                                type: string
+                              display_name:
+                                type: string
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Not Found
+    post:
+      summary: Create team
+      description: Create a team in a hackathon. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+      responses:
+        '201':
+          description: Team created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Team'
+      operationId: postapihackathonsidteams
+  '/api/hackathons/{id}/submissions':
+    post:
+      summary: Create submission (Admin)
+      description: Create a submission manually on behalf of a team. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - team_id
+                - title
+              properties:
+                team_id:
+                  type: string
+                  format: uuid
+                title:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+      responses:
+        '201':
+          description: Submission created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Submission'
+      operationId: postapihackathonsidsubmissions
+  '/api/hackathons/{id}/assignments':
+    post:
+      summary: Create judge assignment
+      description: 'Assign a judge directly to a submission, bypassing invitations. Requires Organizer access.'
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - judge_user_id
+                - submission_id
+              properties:
+                judge_user_id:
+                  type: string
+                  format: uuid
+                submission_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Assignment created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/JudgeAssignment'
+        '400':
+          description: Invalid data or assignment state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+      operationId: postapihackathonsidassignments
+  '/api/hackathons/{id}/invitations':
+    post:
+      summary: Create judge invitation
+      description: Invite a user to judge a specific submission. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - judge_user_id
+                - submission_id
+              properties:
+                judge_user_id:
+                  type: string
+                  format: uuid
+                submission_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Invitation created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/JudgeInvitation'
+        '400':
+          description: Invalid data or invitation state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+      operationId: postapihackathonsidinvitations
+  '/api/hackathons/{id}/results':
+    get:
+      summary: Get hackathon results (Admin)
+      description: Retrieve complete scoring aggregation. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Results aggregation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AggregateResult'
+      operationId: getapihackathonsidresults
+  '/api/hackathons/{id}/export.csv':
+    get:
+      summary: Export hackathon results as CSV
+      description: Downloads the aggregated scoring results in CSV format. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: CSV file payload
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+      operationId: getapihackathonsidexportcsv
+  /api/judging/assignments:
+    get:
+      summary: Get judge assignments
+      description: List active assignments for the authenticated user. Implicitly handles Judge isolation.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Array of assignments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JudgeAssignment'
+      operationId: getapijudgingassignments
+  /api/judging/invitations:
+    get:
+      summary: Get judge invitations
+      description: List pending invitations for the authenticated user.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Array of invitations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JudgeInvitation'
+      operationId: getapijudginginvitations
+  '/api/judging/invitations/{id}/accept':
+    post:
+      summary: Accept judge invitation
+      description: Transitions invitation to ACCEPTED and creates an assignment.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Accepted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+      operationId: postapijudginginvitationsidaccept
+  '/api/judging/invitations/{id}/decline':
+    post:
+      summary: Decline judge invitation
+      description: Transitions invitation to DECLINED.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Declined successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+      operationId: postapijudginginvitationsiddecline
+  '/api/judging/submissions/{submissionId}/evaluation':
+    get:
+      summary: Get submission evaluation
+      description: Get the authenticated judge's evaluation state for a specific submission. Isolates judges so they cannot see peer scores.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: submissionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Evaluation object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EvaluationDetail'
+      operationId: getapijudgingsubmissionssubmissionIdevaluation
+    put:
+      summary: Save or submit evaluation
+      description: Saves criteria scores and optionally commits them to SUBMITTED state.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: submissionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                submit:
+                  type: boolean
+                  default: false
+                scores:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - criterion_id
+                      - raw_score
+                    properties:
+                      criterion_id:
+                        type: string
+                        format: uuid
+                      raw_score:
+                        type: integer
+      responses:
+        '200':
+          description: Evaluation updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/EvaluationDetail'
+      operationId: putapijudgingsubmissionssubmissionIdevaluation
+  /api/public/gallery:
+    get:
+      summary: Public submission gallery
+      description: Returns a list of all hackathon submissions. Returns raw JSON array without a wrapper.
+      parameters:
+        - in: query
+          name: seed
+          schema:
+            type: string
+          description: Optional seed for deterministic random shuffling
+      responses:
+        '200':
+          description: Array of gallery submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GallerySubmission'
+      security: []
+      operationId: getapipublicgallery
+  /embed/gallery:
+    get:
+      summary: Embeddable gallery page (T4)
+      description: >
+        Returns the gallery SPA shell with relaxed framing headers so the page
+        can be embedded in an external website via <iframe>. No authentication
+        required. The page data is fetched by the SPA from /api/public/gallery.
+        Unlike /gallery, this route removes X-Frame-Options and sets
+        Content-Security-Policy frame-ancestors to * to allow cross-origin
+        embedding. All other security headers remain unchanged.
+      responses:
+        '200':
+          description: HTML SPA shell with embed-safe security headers
+          content:
+            text/html:
+              schema:
+                type: string
+      security: []
+      operationId: getembedgallery
+  '/api/public/hackathons/{hackathonId}/results':
+    get:
+      summary: Public hackathon results
+      description: Returns the public results summary for a hackathon. Enforces results embargo if submissions are not yet closed.
+      parameters:
+        - in: path
+          name: hackathonId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Public results overview
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PublicResult'
+        '403':
+          description: Results embargoed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+      security: []
+      operationId: getapipublichackathonshackathonIdresults
+  /api/public/submit:
+    post:
+      summary: Public create submission
+      description: Participant endpoint to create a submission. Requires authentication.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+              properties:
+                title:
+                  type: string
+                summary:
+                  type: string
+      responses:
+        '201':
+          description: Submission created successfully (Unwrapped payload)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submission'
+      operationId: postapipublicsubmit
+  '/api/public/submissions/{submissionId}':
+    put:
+      summary: Edit public submission
+      description: Modifies an existing submission. Enforces ownership so only team members can edit.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: submissionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+              properties:
+                title:
+                  type: string
+      responses:
+        '200':
+          description: Submission updated (Unwrapped payload)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submission'
+        '403':
+          description: Not authorized to edit (Not team member)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+        '404':
+          description: Submission not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+      operationId: putapipublicsubmissionssubmissionId
+  '/api/public/submissions/{submissionId}/vote':
+    post:
+      summary: Cast community vote
+      description: 'Authenticated user votes for a submission. Rejects self-voting, duplicate voting, and voting past deadline. Returns {error: string} on failure.'
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: submissionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                hackathon_id:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: Vote recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CommunityVote'
+        '400':
+          description: Invalid Request Format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+        '403':
+          description: Self-vote or Voting closed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+        '404':
+          description: Submission not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+        '409':
+          description: Duplicate vote
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+      operationId: postapipublicsubmissionssubmissionIdvote
+  '/api/public/submissions/{submissionId}/votes':
+    get:
+      summary: Get vote count
+      description: Returns the total community votes for a submission.
+      parameters:
+        - in: path
+          name: submissionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Vote count total
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  submission_id:
+                    type: string
+                    format: uuid
+                  votes:
+                    type: integer
+        '404':
+          description: Submission not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+      security: []
+      operationId: getapipublicsubmissionssubmissionIdvotes
+  '/api/public/submissions/{submissionId}/comments':
+    get:
+      summary: Get comments
+      description: List public comments on a submission. Returns unwrapped JSON array.
+      parameters:
+        - in: path
+          name: submissionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Array of comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
+        '404':
+          description: Submission not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+      security: []
+      operationId: getapipublicsubmissionssubmissionIdcomments
+    post:
+      summary: Create comment
+      description: Authenticated user creates a comment on a submission.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: submissionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - body
+              properties:
+                body:
+                  type: string
+                  maxLength: 2000
+      responses:
+        '201':
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Comment'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+        '403':
+          description: Commenting closed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+        '404':
+          description: Submission not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+      operationId: postapipublicsubmissionssubmissionIdcomments
+  /api/policies:
+    get:
+      summary: List policies
+      description: Retrieve list of judging policies. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of policies
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Policy'
+      operationId: getapipolicies
+    post:
+      summary: Create policy
+      description: Create a new judging policy. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                description:
+                  type: string
+                  maxLength: 10000
+                  default: ''
+      responses:
+        '201':
+          description: Created policy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Policy'
+      operationId: postapipolicies
+  '/api/policies/{id}':
+    get:
+      summary: Get policy
+      description: Get details of a policy with its criteria. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Policy details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/PolicyWithCriteria'
+      operationId: getapipoliciesid
+  '/api/policies/{id}/criteria':
+    post:
+      summary: Add criterion
+      description: Add a scoring criterion to a DRAFT policy. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - min_score
+                - max_score
+                - weight
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                description:
+                  type: string
+                  maxLength: 10000
+                  default: ''
+                min_score:
+                  type: integer
+                max_score:
+                  type: integer
+                weight:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                display_order:
+                  type: integer
+                  default: 0
+      responses:
+        '201':
+          description: Created criterion
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Criterion'
+      operationId: postapipoliciesidcriteria
+  '/api/policies/{id}/criteria/{criterionId}':
+    put:
+      summary: Update criterion
+      description: Update an existing criterion in a DRAFT policy. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: criterionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - min_score
+                - max_score
+                - weight
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                description:
+                  type: string
+                  maxLength: 10000
+                  default: ''
+                min_score:
+                  type: integer
+                max_score:
+                  type: integer
+                weight:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
+                display_order:
+                  type: integer
+                  default: 0
+      responses:
+        '200':
+          description: Updated criterion
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Criterion'
+      operationId: putapipoliciesidcriteriacriterionId
+    delete:
+      summary: Delete criterion
+      description: Delete a criterion from a DRAFT policy. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: criterionId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Criterion deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+      operationId: deleteapipoliciesidcriteriacriterionId
+  '/api/policies/{id}/publish':
+    post:
+      summary: Publish policy
+      description: Locks the policy for judging. Must have criteria weighting to exactly 100. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Published policy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Policy'
+      operationId: postapipoliciesidpublish
+  /api/audit:
+    get:
+      summary: Get audit logs
+      description: Fetches recent security and role-isolated audit events. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Array of audit events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditEvent'
+      operationId: getapiaudit
+  '/api/hackathons/{id}/verifiable-records/issue':
+    post:
+      summary: Issue verifiable records
+      description: Issues cryptographic participation certificates and judge records for a completed hackathon. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successfully issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      issued_count:
+                        type: integer
+                      record_ids:
+                        type: array
+                        items:
+                          type: string
+                          format: uuid
+        '400':
+          description: Hackathon not completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+        '403':
+          description: Organizer access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+      operationId: postapihackathonsidverifiablerecordsissue
+  /api/public/keys:
+    get:
+      summary: Get active and historical signing keys
+      description: Returns the Ed25519 public keys required to mathematically verify a certificate.
+      responses:
+        '200':
+          description: List of keys
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      keys:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            kid:
+                              type: string
+                            public_key:
+                              type: string
+                            algorithm:
+                              type: string
+                            created_at:
+                              type: string
+                              format: date-time
+                            retired_at:
+                              type: string
+                              format: date-time
+                              nullable: true
+      security: []
+      operationId: getapipublickeys
+  '/api/public/records/{recordId}':
+    get:
+      summary: Get a verifiable record
+      description: 'Fetches the payload, cryptographic signature, and key ID (kid) for a public verification record.'
+      parameters:
+        - in: path
+          name: recordId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: A verified record
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      type:
+                        type: string
+                        enum:
+                          - JUDGE_PARTICIPATION
+                          - PARTICIPANT_CERTIFICATE
+                      payload:
+                        type: object
+                        additionalProperties: true
+                      signature:
+                        type: string
+                      kid:
+                        type: string
+                      issued_at:
+                        type: string
+                        format: date-time
+        '404':
+          description: Record not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorString'
+      security: []
+      operationId: getapipublicrecordsrecordId
+  '/api/hackathons/{id}/export':
+    get:
+      summary: Export Hackathon Artifact
+      description: Generates a complete JSON migration artifact for the event. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: A complete event migration artifact
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Complete JSON representation of the hackathon and its entities.
+        '403':
+          description: Organizer access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+        '404':
+          description: Hackathon not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+      operationId: getapihackathonsidexport
+  /api/hackathons/import:
+    post:
+      summary: Import Hackathon Artifact
+      description: 'Imports a JSON migration artifact, perfectly cloning the event under a new Hackathon ID. Requires Organizer access.'
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: The JSON migration artifact payload
+      responses:
+        '201':
+          description: Successfully imported
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      target_hackathon_id:
+                        type: string
+                        format: uuid
+        '400':
+          description: Invalid migration artifact or structural error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+        '403':
+          description: Organizer access required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+        '422':
+          description: Missing user emails
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorStandard'
+      operationId: postapihackathonsimport
+
+
+  '/api/hackathons/{id}/webhooks':
+    get:
+      summary: List Webhooks
+      description: Returns a list of webhooks for the hackathon. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+    post:
+      summary: Create Webhook
+      description: Creates a new webhook endpoint. Returns the secret once. Requires Organizer access.
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+              required:
+                - url
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                      secret:
+                        type: string
+  '/api/hackathons/{id}/webhooks/{webhookId}':
+    get:
+      summary: Get Webhook
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: webhookId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+    put:
+      summary: Update Webhook
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: webhookId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                is_active:
+                  type: boolean
+              required:
+                - url
+                - is_active
+      responses:
+        '200':
+          description: OK
+    delete:
+      summary: Delete Webhook
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: webhookId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: No Content
+  '/api/hackathons/{id}/webhooks/{webhookId}/test':
+    post:
+      summary: Send Test Webhook
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: webhookId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+  '/api/hackathons/{id}/webhooks/{webhookId}/deliveries':
+    get:
+      summary: List Webhook Deliveries
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - in: path
+          name: webhookId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK

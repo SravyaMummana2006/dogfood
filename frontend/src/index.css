@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-navy-900 text-gray-300 font-sans antialiased overflow-x-hidden;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display text-white tracking-tight;
+  }
+}
+
+@layer utilities {
+  .preserve-3d {
+    transform-style: preserve-3d;
+  }
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+  .text-shadow-layered {
+    text-shadow: 4px 4px 0px theme('colors.pink.600'), 8px 8px 0px rgba(6, 9, 19, 0.9);
+  }
+}
+
+/* 3D Wireframe Geometric Structure */
+.cube-container {
+  /* Dynamic sizing based on viewport */
+  --cube-base: 18rem;
+  perspective: 1600px;
+  width: var(--cube-base);
+  height: var(--cube-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 1024px) {
+  .cube-container {
+    --cube-base: 28rem; /* Large on desktop */
+  }
+}
+
+@media (min-width: 1280px) {
+  .cube-container {
+    --cube-base: 36rem; /* Massive on wide screens */
+  }
+}
+
+.wireframe-cube {
+  position: absolute;
+  transform-style: preserve-3d;
+  animation: wireframe-spin 35s infinite linear;
+}
+
+.wireframe-cube.outer {
+  width: var(--cube-base);
+  height: var(--cube-base);
+}
+
+.wireframe-cube.inner {
+  width: calc(var(--cube-base) * 0.5);
+  height: calc(var(--cube-base) * 0.5);
+  animation: wireframe-spin-reverse 20s infinite linear;
+}
+
+.wireframe-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
+/* Outer Geometric Mesh */
+.outer .wireframe-face { border: 1px solid rgba(0, 240, 255, 0.25); }
+.outer .wireframe-face::before, .outer .wireframe-face::after {
+  content: ''; position: absolute; width: 8px; height: 8px; background: #00F0FF; border-radius: 50%; box-shadow: 0 0 15px #00F0FF;
+}
+.outer .wireframe-face::before { top: -4px; left: -4px; }
+.outer .wireframe-face::after { bottom: -4px; right: -4px; }
+
+/* Inner Geometric Mesh */
+.inner .wireframe-face { border: 1px solid rgba(255, 0, 85, 0.3); }
+.inner .wireframe-face::before, .inner .wireframe-face::after {
+  content: ''; position: absolute; width: 6px; height: 6px; background: #FF0055; border-radius: 50%; box-shadow: 0 0 12px #FF0055;
+}
+.inner .wireframe-face::before { top: -3px; right: -3px; }
+.inner .wireframe-face::after { bottom: -3px; left: -3px; }
+
+/* Transforms for Outer */
+.outer .cube-front  { transform: translateZ(calc(var(--cube-base) / 2)); }
+.outer .cube-back   { transform: rotateY(180deg) translateZ(calc(var(--cube-base) / 2)); }
+.outer .cube-right  { transform: rotateY(90deg) translateZ(calc(var(--cube-base) / 2)); }
+.outer .cube-left   { transform: rotateY(-90deg) translateZ(calc(var(--cube-base) / 2)); }
+.outer .cube-top    { transform: rotateX(90deg) translateZ(calc(var(--cube-base) / 2)); }
+.outer .cube-bottom { transform: rotateX(-90deg) translateZ(calc(var(--cube-base) / 2)); }
+
+/* Transforms for Inner */
+.inner .cube-front  { transform: translateZ(calc(var(--cube-base) / 4)); }
+.inner .cube-back   { transform: rotateY(180deg) translateZ(calc(var(--cube-base) / 4)); }
+.inner .cube-right  { transform: rotateY(90deg) translateZ(calc(var(--cube-base) / 4)); }
+.inner .cube-left   { transform: rotateY(-90deg) translateZ(calc(var(--cube-base) / 4)); }
+.inner .cube-top    { transform: rotateX(90deg) translateZ(calc(var(--cube-base) / 4)); }
+.inner .cube-bottom { transform: rotateX(-90deg) translateZ(calc(var(--cube-base) / 4)); }
+
+@keyframes wireframe-spin {
+  0%   { transform: rotateX(-20deg) rotateY(0deg) rotateZ(0deg); }
+  100% { transform: rotateX(-20deg) rotateY(360deg) rotateZ(360deg); }
+}
+
+@keyframes wireframe-spin-reverse {
+  0%   { transform: rotateX(20deg) rotateY(360deg) rotateZ(0deg); }
+  100% { transform: rotateX(20deg) rotateY(0deg) rotateZ(-360deg); }
+}
+
+/* Grid background pattern */
+.bg-grid-pattern {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wireframe-cube {
+    animation: none !important;
+  }
+  .outer.wireframe-cube { transform: rotateX(-20deg) rotateY(45deg); }
+  .inner.wireframe-cube { transform: rotateX(20deg) rotateY(-45deg); }
+  .transition-all { transition: none !important; }
+}

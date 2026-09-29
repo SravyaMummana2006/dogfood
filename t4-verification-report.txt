@@ -1,0 +1,53 @@
+# Internal T4 Capability Verification
+
+> These are project-level verification categories used to document the implementation. They are not additional official DOGFOOD T4 requirements. 
+
+This document details the exact capabilities implemented and verified to satisfy advanced integration and transparency goals.
+
+## 1. REST API / OpenAPI
+- **Feature**: 100% headless REST API capability mapped to an OpenAPI 3.0.3 contract.
+- **Implementation**: Express routing utilizing Zod schema validation. The React UI is merely an unprivileged client.
+- **Endpoint/Component**: `openapi.yaml` and all `/api/*` endpoints.
+- **Test/Verification**: `@redocly/cli lint openapi.yaml` yields a valid status. Functionality proved via 143/143 passing backend tests.
+- **Manual Verification**: Boot the environment and open `openapi.yaml` in SwaggerUI or Postman to execute endpoints directly.
+- **Limitations**: The OpenAPI definition does not currently generate automated TypeScript client SDKs for the frontend.
+
+## 2. Webhooks
+- **Feature**: Transactional state-change broadcast to external receivers.
+- **Implementation**: Asynchronous outbox worker pattern utilizing exponential backoff and HMAC-SHA256 signature generation (`X-Dogfood-Signature`).
+- **Endpoint/Component**: `POST /api/hackathons/{id}/webhooks`
+- **Test/Verification**: `tests/webhooks.test.ts` (11 tests verifying URL format, delivery retry, and signature validation).
+- **Manual Verification**: Register an endpoint via the Organizer dashboard, mutate a team, and inspect the external receiver's payload.
+- **Limitations**: Queueing relies on a PostgreSQL polling outbox, which cannot match the massive horizontal throughput of a dedicated Kafka/RabbitMQ bus.
+
+## 3. Certificate / Record Generation
+- **Feature**: Immutable finalization of a submission's event placement.
+- **Implementation**: The server accepts an Organizer request, locks the hackathon state, and generates a structured JSON payload encapsulating the ranking and score.
+- **Endpoint/Component**: `POST /api/hackathons/{id}/records`
+- **Test/Verification**: `tests/verifiable_records.test.ts` proves generation is idempotent and restricted strictly to `COMPLETED` events.
+- **Manual Verification**: Trigger the Organizer "Finalize Event" flow in the UI to generate the records.
+- **Limitations**: Records cannot be generated individually; the entire hackathon must be finalized globally.
+
+## 4. Signed Public Records & Verification
+- **Feature**: Mathematical proof of score authenticity independent of the database.
+- **Implementation**: Certificates are signed natively using a server-side Ed25519 private key. A public route mathematically verifies the signature against the payload using the public key.
+- **Endpoint/Component**: `GET /api/public/records/{id}/verify` and `GET /api/public/keys`
+- **Test/Verification**: `tests/verifiable_records.test.ts` proves that modifying the JSON payload or the signature string results in a definitive boolean `false` during verification.
+- **Manual Verification**: Query the verify endpoint with an untampered UUID, then modify the query string to test the signature failure.
+- **Limitations**: Complete compromise of the server environment variables would allow an attacker to sign fraudulent records.
+
+## 5. Embeddable Gallery
+- **Feature**: Portable frontend widget for external site integration.
+- **Implementation**: A stripped-down React route specifically secured via a permissive Content Security Policy (`frame-ancestors *`).
+- **Endpoint/Component**: `GET /embed/gallery` (Frontend)
+- **Test/Verification**: Inspection of the Express security headers middleware to confirm standard `X-Frame-Options` are suppressed only for the `/embed/*` namespace.
+- **Manual Verification**: Embed the URL in a local HTML `<iframe>` tag to verify rendering outside the parent domain.
+- **Limitations**: The embedded view is strictly read-only; voting and comments require traversing to the primary domain.
+
+## 6. Bulk Import / Export
+- **Feature**: Atomic event portability and migration.
+- **Implementation**: A specialized service serializes the entire relational tree (Teams, Users, Submissions, Scores, Rubrics) into a unified JSON artifact. The import pipeline reconstructs the event transactionally, mapping UUIDs to prevent collisions.
+- **Endpoint/Component**: `GET /api/hackathons/{id}/export` and `POST /api/hackathons/import`
+- **Test/Verification**: `tests/bulk_import.test.ts` proves relational reconstruction and atomic rollback upon structural validation failure.
+- **Manual Verification**: Export an active event via the Organizer dashboard and import the JSON file into a completely clean Docker instance.
+- **Limitations**: Importing relies on email string matching to map existing users to imported historical records.
