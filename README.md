@@ -159,7 +159,7 @@ React UI updates status badge to "SUBMITTED" and locks form input
 
 ### Step 1 — Clone & Navigate
 ```bash
-git clone <repository-url>
+git clone https://github.com/SravyaMummana2006/dogfood.git
 cd dogfood
 ```
 
